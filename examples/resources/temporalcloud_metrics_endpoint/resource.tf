@@ -10,7 +10,6 @@ provider "temporalcloud" {
 
 }
 
-resource "temporalcloud_account_metrics" "terraform" {
-  enabled            = true
+resource "temporalcloud_metrics_endpoint" "terraform" {
   accepted_client_ca = base64encode(file("${path.module}/ca.pem"))
 }

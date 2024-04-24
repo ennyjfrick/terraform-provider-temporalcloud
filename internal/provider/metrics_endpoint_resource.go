@@ -19,33 +19,31 @@ import (
 )
 
 type (
-	accountMetricsResource struct {
+	metricsEndpointResource struct {
 		accountClient accountservice.AccountServiceClient
 		requestClient requestservice.RequestServiceClient
 	}
 
-	accountMetricsResourceModel struct {
+	metricsEndpointResourceModel struct {
 		ID               types.String `tfsdk:"id"`
-		Enabled          types.Bool   `tfsdk:"enabled"`
 		AcceptedClientCA types.String `tfsdk:"accepted_client_ca"`
-		Endpoint         types.String `tfsdk:"endpoint"`
+		Uri              types.String `tfsdk:"uri"`
 
 		Timeouts timeouts.Value `tfsdk:"timeouts"`
 	}
 )
 
 var (
-	_ resource.Resource                   = (*accountMetricsResource)(nil)
-	_ resource.ResourceWithConfigure      = (*accountMetricsResource)(nil)
-	_ resource.ResourceWithImportState    = (*accountMetricsResource)(nil)
-	_ resource.ResourceWithValidateConfig = (*accountMetricsResource)(nil)
+	_ resource.Resource                = (*metricsEndpointResource)(nil)
+	_ resource.ResourceWithConfigure   = (*metricsEndpointResource)(nil)
+	_ resource.ResourceWithImportState = (*metricsEndpointResource)(nil)
 )
 
-func NewAccountMetricsResource() resource.Resource {
-	return &accountMetricsResource{}
+func NewMetricsEndpointResource() resource.Resource {
+	return &metricsEndpointResource{}
 }
 
-func (r *accountMetricsResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *metricsEndpointResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -65,12 +63,12 @@ func (r *accountMetricsResource) Configure(_ context.Context, req resource.Confi
 }
 
 // Metadata returns the resource type name.
-func (r *accountMetricsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_account_metrics"
+func (r *metricsEndpointResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_metrics_endpoint"
 }
 
 // Schema defines the schema for the resource.
-func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *metricsEndpointResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Configures a Temporal Cloud account's metrics",
 		Attributes: map[string]schema.Attribute{
@@ -81,15 +79,11 @@ func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRe
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"enabled": schema.BoolAttribute{
-				Description: "If true, enables metrics for the account",
+			"accepted_client_ca": schema.StringAttribute{
+				Description: "The Base64-encoded CA cert in PEM format used to authenticate clients connecting to the metrics endpoint.",
 				Required:    true,
 			},
-			"accepted_client_ca": schema.StringAttribute{
-				Description: "The Base64-encoded CA cert in PEM format used to authenticate clients connecting to the metrics endpoint. Required when enabled is true.",
-				Optional:    true,
-			},
-			"endpoint": schema.StringAttribute{
+			"uri": schema.StringAttribute{
 				Description: "The Prometheus metrics endpoint URI",
 				Computed:    true,
 			},
@@ -106,28 +100,9 @@ func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRe
 	}
 }
 
-// ValidateConfig validates the resource's config.
-func (r *accountMetricsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data accountMetricsResourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if data.Enabled.ValueBool() && (data.AcceptedClientCA.IsNull() || data.AcceptedClientCA.IsUnknown() || data.AcceptedClientCA.ValueString() == "") {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("accepted_client_ca"),
-			"Missing Attribute Configuration",
-			"Expected accepted_client_ca to be configured when enabled is true",
-		)
-
-		return
-	}
-}
-
 // Create creates the resource and sets the initial Terraform state.
-func (r *accountMetricsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan accountMetricsResourceModel
+func (r *metricsEndpointResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan metricsEndpointResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -148,12 +123,12 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	// account metrics config always exists, "create" only really sets the state
+	// create just flips "enabled" to true
 	metricsReq := &accountservice.UpdateAccountRequest{
 		ResourceVersion: accResp.GetAccount().GetResourceVersion(),
 		Spec: &account.AccountSpec{
 			Metrics: &account.MetricsSpec{
-				Enabled:          plan.Enabled.ValueBool(),
+				Enabled:          true,
 				AcceptedClientCa: plan.AcceptedClientCA.ValueString(),
 			},
 			OutputSinks: accResp.GetAccount().GetSpec().GetOutputSinks(),
@@ -162,12 +137,12 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 
 	metricsResp, err := r.accountClient.UpdateAccount(ctx, metricsReq)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create metrics resource", err.Error())
+		resp.Diagnostics.AddError("Failed to create metrics endpoint resource", err.Error())
 		return
 	}
 
 	if err := client.AwaitRequestStatus(ctx, r.requestClient, metricsResp.GetRequestStatus()); err != nil {
-		resp.Diagnostics.AddError("Failed to create metrics resource", err.Error())
+		resp.Diagnostics.AddError("Failed to create metrics endpoint resource", err.Error())
 		return
 	}
 
@@ -182,15 +157,15 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state accountMetricsResourceModel
+func (r *metricsEndpointResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state metricsEndpointResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	accResp, err := r.accountClient.GetAccount(ctx, &accountservice.GetAccountRequest{})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get account metrics", err.Error())
+		resp.Diagnostics.AddError("Failed to get metrics endpoint", err.Error())
 		return
 	}
 
@@ -199,8 +174,8 @@ func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequ
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *accountMetricsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan accountMetricsResourceModel
+func (r *metricsEndpointResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan metricsEndpointResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -214,7 +189,7 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 
 	accResp, err := r.accountClient.GetAccount(ctx, &accountservice.GetAccountRequest{})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get current account metrics status", err.Error())
+		resp.Diagnostics.AddError("Failed to get current metrics endpoint status", err.Error())
 		return
 	}
 
@@ -225,7 +200,7 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 		ResourceVersion: accResp.GetAccount().GetResourceVersion(),
 		Spec: &account.AccountSpec{
 			Metrics: &account.MetricsSpec{
-				Enabled:          plan.Enabled.ValueBool(),
+				Enabled:          accResp.GetAccount().GetSpec().GetMetrics().GetEnabled(),
 				AcceptedClientCa: plan.AcceptedClientCA.ValueString(),
 			},
 			OutputSinks: accResp.GetAccount().GetSpec().GetOutputSinks(),
@@ -234,18 +209,18 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 
 	metricsResp, err := r.accountClient.UpdateAccount(ctx, metricsReq)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to update account metrics", err.Error())
+		resp.Diagnostics.AddError("Failed to update metrics endpoint endpoint", err.Error())
 		return
 	}
 
 	if err := client.AwaitRequestStatus(ctx, r.requestClient, metricsResp.GetRequestStatus()); err != nil {
-		resp.Diagnostics.AddError("Failed to update account metrics", err.Error())
+		resp.Diagnostics.AddError("Failed to update metrics endpoint endpoint", err.Error())
 		return
 	}
 
 	accResp, err = r.accountClient.GetAccount(ctx, &accountservice.GetAccountRequest{})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get account metrics after update", err.Error())
+		resp.Diagnostics.AddError("Failed to get metrics endpoint after update", err.Error())
 		return
 	}
 
@@ -254,8 +229,8 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *accountMetricsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state accountMetricsResourceModel
+func (r *metricsEndpointResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state metricsEndpointResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -268,14 +243,14 @@ func (r *accountMetricsResource) Delete(ctx context.Context, req resource.Delete
 
 	accResp, err := r.accountClient.GetAccount(ctx, &accountservice.GetAccountRequest{})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get current account metrics status", err.Error())
+		resp.Diagnostics.AddError("Failed to get current metrics endpoint status", err.Error())
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// can't actually "delete" account metrics config, setting to disabled implicitly is the best equivalent
+	// can't actually "delete" account metrics config, setting to disabled is the best equivalent
 	metricsReq := &accountservice.UpdateAccountRequest{
 		ResourceVersion: accResp.GetAccount().GetResourceVersion(),
 		Spec: &account.AccountSpec{
@@ -288,23 +263,22 @@ func (r *accountMetricsResource) Delete(ctx context.Context, req resource.Delete
 
 	metricsResp, err := r.accountClient.UpdateAccount(ctx, metricsReq)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete metrics resource", err.Error())
+		resp.Diagnostics.AddError("Failed to delete metrics endpoint resource", err.Error())
 		return
 	}
 
 	if err := client.AwaitRequestStatus(ctx, r.requestClient, metricsResp.GetRequestStatus()); err != nil {
-		resp.Diagnostics.AddError("Failed to delete metrics resource", err.Error())
+		resp.Diagnostics.AddError("Failed to delete metrics endpoint resource", err.Error())
 		return
 	}
 }
 
-func (r *accountMetricsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *metricsEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func updateAccountMetricsModelFromSpec(state *accountMetricsResourceModel, spec *account.Account) {
-	state.Enabled = types.BoolValue(spec.GetSpec().GetMetrics().GetEnabled())
+func updateAccountMetricsModelFromSpec(state *metricsEndpointResourceModel, spec *account.Account) {
 	state.AcceptedClientCA = types.StringValue(spec.GetSpec().GetMetrics().GetAcceptedClientCa())
-	state.Endpoint = types.StringValue(spec.GetMetrics().GetUri())
+	state.Uri = types.StringValue(spec.GetMetrics().GetUri())
 	state.ID = types.StringValue("account-metrics") // no real ID to key off of here other than account ID, which is hard to get via the API
 }

@@ -17,7 +17,7 @@ var (
 	_ datasource.DataSourceWithConfigure = &regionsDataSource{}
 )
 
-// NewCoffeesDataSource is a helper function to simplify the provider implementation.
+// NewRegionsDataSource is a helper function to simplify the provider implementation.
 func NewRegionsDataSource() datasource.DataSource {
 	return &regionsDataSource{}
 }

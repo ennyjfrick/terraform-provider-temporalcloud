@@ -64,10 +64,12 @@ func (r *accountMetricsResource) Configure(_ context.Context, req resource.Confi
 	r.requestClient = clientStore.RequestServiceClient()
 }
 
+// Metadata returns the resource type name
 func (r *accountMetricsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "account_metrics"
 }
 
+// Schema defines the schema for the resource
 func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Configures a Temporal Cloud account's metrics",
@@ -103,6 +105,7 @@ func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRe
 	}
 }
 
+// ValidateConfig validates the resource's config
 func (r *accountMetricsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
@@ -121,6 +124,7 @@ func (r *accountMetricsResource) ValidateConfig(ctx context.Context, req resourc
 	}
 }
 
+// Create creates the resource and sets the initial Terraform state
 func (r *accountMetricsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -143,6 +147,7 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	// account metrics config always exists, "create" only really sets the state
 	metricsReq := &accountservice.UpdateAccountRequest{
 		ResourceVersion: accResp.GetAccount().GetResourceVersion(),
 		Spec: &account.AccountSpec{
@@ -175,6 +180,7 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
+// Read refreshes the Terraform state with the latest data
 func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state accountMetricsResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -191,6 +197,7 @@ func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
+// Update updates the resource and sets the updated Terraform state on success
 func (r *accountMetricsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -245,6 +252,7 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
+// Delete deletes the resource and removes the Terraform state on success
 func (r *accountMetricsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state accountMetricsResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -266,6 +274,7 @@ func (r *accountMetricsResource) Delete(ctx context.Context, req resource.Delete
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
+	// can't actually "delete" account metrics config, setting to disabled implicitly is the best equivalent
 	metricsReq := &accountservice.UpdateAccountRequest{
 		ResourceVersion: accResp.GetAccount().GetResourceVersion(),
 		Spec: &account.AccountSpec{
@@ -296,5 +305,5 @@ func updateAccountMetricsModelFromSpec(state *accountMetricsResourceModel, spec 
 	state.Enabled = types.BoolValue(spec.GetSpec().GetMetrics().GetEnabled())
 	state.AcceptedClientCA = types.StringValue(spec.GetSpec().GetMetrics().GetAcceptedClientCa())
 	state.Endpoint = types.StringValue(spec.GetMetrics().GetUri())
-	state.ID = types.StringValue("account-metrics")
+	state.ID = types.StringValue("account-metrics") // no real ID to key off of here other than account ID, which is hard to get via the API
 }

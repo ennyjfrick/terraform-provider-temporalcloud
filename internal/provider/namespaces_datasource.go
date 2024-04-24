@@ -158,7 +158,7 @@ func (d *namespacesDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 						"certificate_filters": schema.ListNestedAttribute{
 							Computed:    true,
 							Optional:    true,
-							Description: "A list of filters to apply to accountClient certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from accountClient certificates whose distinguished name properties match at least one of the filters.",
+							Description: "A list of filters to apply to client certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from client certificates whose distinguished name properties match at least one of the filters.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"common_name": schema.StringAttribute{

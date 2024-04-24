@@ -41,7 +41,7 @@ type (
 	}
 )
 
-// Configure adds the provider configured accountClient to the data source.
+// Configure adds the provider configured client to the data source.
 func (d *regionsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return

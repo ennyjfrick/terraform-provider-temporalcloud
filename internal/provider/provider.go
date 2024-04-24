@@ -84,7 +84,7 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_key"),
 			"Unknown Terraform Cloud API Key",
-			"The provider cannot create a Terraform Cloud API accountClient as there is an unknown configuration value for the Temporal Cloud API Key."+
+			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for the Temporal Cloud API Key."+
 				" Either apply the source of the value first, or statically set the API Key via environment variable or in configuration.")
 		return
 	}
@@ -93,7 +93,7 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 		resp.Diagnostics.AddAttributeError(
 			path.Root("endpoint"),
 			"Unknown Terraform Cloud Endpoint",
-			"The provider cannot create a Terraform Cloud API accountClient as there is an unknown configuration value for the Temporal Cloud API Endpoint."+
+			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for the Temporal Cloud API Endpoint."+
 				" Either apply the source of the value first, or statically set the API Key via environment variable or in configuration.")
 	}
 
@@ -101,7 +101,7 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 		resp.Diagnostics.AddAttributeError(
 			path.Root("allow_insecure"),
 			"Unknown Terraform Cloud Endpoint",
-			"The provider cannot create a Terraform Cloud API accountClient as there is an unknown configuration value for `allow_insecure`."+
+			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for `allow_insecure`."+
 				" Either apply the source of the value first, or statically set the API Key via environment variable or in configuration.")
 	}
 

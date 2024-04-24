@@ -354,7 +354,7 @@ func newConnection(t *testing.T) cloudservicev1.CloudServiceClient {
 
 	client, err := client.NewConnectionWithAPIKey(endpoint, allowInsecure, apiKey)
 	if err != nil {
-		t.Fatalf("Failed to create accountClient: %v", err)
+		t.Fatalf("Failed to create client: %v", err)
 	}
 
 	return client.CloudServiceClient()

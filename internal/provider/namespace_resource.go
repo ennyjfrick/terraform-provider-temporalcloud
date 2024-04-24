@@ -120,17 +120,17 @@ func (r *namespaceResource) Configure(_ context.Context, req resource.ConfigureR
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected cloudservicev1.CloudServiceClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected client.CloudClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
 	}
 
-	r.client = client
+	r.client = clientStore.CloudServiceClient()
 }
 
 // Metadata returns the resource type name.
@@ -174,7 +174,7 @@ func (r *namespaceResource) Schema(ctx context.Context, _ resource.SchemaRequest
 				Required:    true,
 			},
 			"certificate_filters": schema.ListNestedAttribute{
-				Description: "A list of filters to apply to client certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from client certificates whose distinguished name properties match at least one of the filters.",
+				Description: "A list of filters to apply to client certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from accountClient certificates whose distinguished name properties match at least one of the filters.",
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -305,7 +305,7 @@ func (r *namespaceResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	updateModelFromSpec(ctx, resp.Diagnostics, &plan, ns.Namespace)
+	updateNamespaceModelFromSpec(ctx, resp.Diagnostics, &plan, ns.Namespace)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -325,7 +325,7 @@ func (r *namespaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	updateModelFromSpec(ctx, resp.Diagnostics, &state, model.Namespace)
+	updateNamespaceModelFromSpec(ctx, resp.Diagnostics, &state, model.Namespace)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -390,7 +390,7 @@ func (r *namespaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	updateModelFromSpec(ctx, resp.Diagnostics, &plan, ns.Namespace)
+	updateNamespaceModelFromSpec(ctx, resp.Diagnostics, &plan, ns.Namespace)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -450,7 +450,7 @@ func getRegionsFromModel(ctx context.Context, diags diag.Diagnostics, plan *name
 	return requestRegions
 }
 
-func updateModelFromSpec(ctx context.Context, diags diag.Diagnostics, state *namespaceResourceModel, ns *namespacev1.Namespace) {
+func updateNamespaceModelFromSpec(ctx context.Context, diags diag.Diagnostics, state *namespaceResourceModel, ns *namespacev1.Namespace) {
 	state.ID = types.StringValue(ns.GetNamespace())
 	state.Name = types.StringValue(ns.GetSpec().GetName())
 	planRegions, listDiags := types.ListValueFrom(ctx, types.StringType, ns.GetSpec().GetRegions())

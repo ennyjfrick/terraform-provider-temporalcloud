@@ -63,7 +63,7 @@ func (r *userResource) Configure(_ context.Context, req resource.ConfigureReques
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -73,7 +73,7 @@ func (r *userResource) Configure(_ context.Context, req resource.ConfigureReques
 		return
 	}
 
-	r.client = client
+	r.client = clientStore.CloudServiceClient()
 }
 
 func (r *userResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

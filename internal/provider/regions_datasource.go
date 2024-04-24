@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
 )
 
@@ -39,13 +41,13 @@ type (
 	}
 )
 
-// Configure adds the provider configured client to the data source.
+// Configure adds the provider configured accountClient to the data source.
 func (d *regionsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -55,7 +57,7 @@ func (d *regionsDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	d.client = client
+	d.client = clientStore.CloudServiceClient()
 }
 
 // Metadata returns the data source type name.

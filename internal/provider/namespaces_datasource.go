@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
 	namespacev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/namespace/v1"
 )
@@ -98,7 +99,7 @@ func (d *namespacesDataSource) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -108,7 +109,7 @@ func (d *namespacesDataSource) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-	d.client = client
+	d.client = clientStore.CloudServiceClient()
 }
 
 func (d *namespacesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -157,7 +158,7 @@ func (d *namespacesDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 						"certificate_filters": schema.ListNestedAttribute{
 							Computed:    true,
 							Optional:    true,
-							Description: "A list of filters to apply to client certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from client certificates whose distinguished name properties match at least one of the filters.",
+							Description: "A list of filters to apply to accountClient certificates when initiating a connection Temporal Cloud. If present, connections will only be allowed from accountClient certificates whose distinguished name properties match at least one of the filters.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"common_name": schema.StringAttribute{

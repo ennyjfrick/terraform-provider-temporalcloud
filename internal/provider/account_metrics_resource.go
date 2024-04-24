@@ -64,12 +64,12 @@ func (r *accountMetricsResource) Configure(_ context.Context, req resource.Confi
 	r.requestClient = clientStore.RequestServiceClient()
 }
 
-// Metadata returns the resource type name
+// Metadata returns the resource type name.
 func (r *accountMetricsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "account_metrics"
+	resp.TypeName = req.ProviderTypeName + "_account_metrics"
 }
 
-// Schema defines the schema for the resource
+// Schema defines the schema for the resource.
 func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Configures a Temporal Cloud account's metrics",
@@ -87,6 +87,7 @@ func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRe
 			},
 			"accepted_client_ca": schema.StringAttribute{
 				Description: "The Base64-encoded CA cert in PEM format used to authenticate clients connecting to the metrics endpoint. Required when enabled is true.",
+				Optional:    true,
 			},
 			"endpoint": schema.StringAttribute{
 				Description: "The Prometheus metrics endpoint URI",
@@ -105,7 +106,7 @@ func (r *accountMetricsResource) Schema(ctx context.Context, _ resource.SchemaRe
 	}
 }
 
-// ValidateConfig validates the resource's config
+// ValidateConfig validates the resource's config.
 func (r *accountMetricsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
@@ -124,7 +125,7 @@ func (r *accountMetricsResource) ValidateConfig(ctx context.Context, req resourc
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state
+// Create creates the resource and sets the initial Terraform state.
 func (r *accountMetricsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -180,7 +181,7 @@ func (r *accountMetricsResource) Create(ctx context.Context, req resource.Create
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-// Read refreshes the Terraform state with the latest data
+// Read refreshes the Terraform state with the latest data.
 func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state accountMetricsResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -197,7 +198,7 @@ func (r *accountMetricsResource) Read(ctx context.Context, req resource.ReadRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-// Update updates the resource and sets the updated Terraform state on success
+// Update updates the resource and sets the updated Terraform state on success.
 func (r *accountMetricsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan accountMetricsResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -252,7 +253,7 @@ func (r *accountMetricsResource) Update(ctx context.Context, req resource.Update
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-// Delete deletes the resource and removes the Terraform state on success
+// Delete deletes the resource and removes the Terraform state on success.
 func (r *accountMetricsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state accountMetricsResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

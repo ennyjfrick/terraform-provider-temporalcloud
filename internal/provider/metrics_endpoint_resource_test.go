@@ -13,7 +13,6 @@ provider "temporalcloud" {
 }
 
 resource "temporalcloud_account_metrics" "terraform" {
-	enabled             = true
 	accepted_client_ca  = base64encode(<<PEM
 -----BEGIN CERTIFICATE-----
 MIIByTCCAVCgAwIBAgIRAWHkC+6JUf3s9Tq43mdp2zgwCgYIKoZIzj0EAwMwEzER

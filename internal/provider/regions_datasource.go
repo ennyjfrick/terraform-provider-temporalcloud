@@ -7,7 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
+
+	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
+	cloudservicev1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
 )
 
 var (
@@ -15,7 +17,7 @@ var (
 	_ datasource.DataSourceWithConfigure = &regionsDataSource{}
 )
 
-// NewCoffeesDataSource is a helper function to simplify the provider implementation.
+// NewRegionsDataSource is a helper function to simplify the provider implementation.
 func NewRegionsDataSource() datasource.DataSource {
 	return &regionsDataSource{}
 }
@@ -45,7 +47,7 @@ func (d *regionsDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -55,7 +57,7 @@ func (d *regionsDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	d.client = client
+	d.client = clientStore.CloudServiceClient()
 }
 
 // Metadata returns the data source type name.

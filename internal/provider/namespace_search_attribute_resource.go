@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/jpillora/maplock"
+
 	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 
 	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
@@ -51,7 +52,7 @@ func (r *namespaceSearchAttributeResource) Configure(_ context.Context, req reso
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -61,7 +62,7 @@ func (r *namespaceSearchAttributeResource) Configure(_ context.Context, req reso
 		return
 	}
 
-	r.client = client
+	r.client = clientStore.CloudServiceClient()
 }
 
 func (r *namespaceSearchAttributeResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

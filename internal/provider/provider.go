@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
+	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
 )
 
 // Ensure TerraformCloudProvider satisfies various provider interfaces.
@@ -123,14 +123,14 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 		allowInsecure = data.AllowInsecure.ValueBool()
 	}
 
-	client, err := client.NewConnectionWithAPIKey(endpoint, allowInsecure, apiKey)
+	clientStore, err := client.NewConnectionWithAPIKey(endpoint, allowInsecure, apiKey)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to connect to Temporal Cloud API", err.Error())
 		return
 	}
 
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	resp.DataSourceData = clientStore
+	resp.ResourceData = clientStore
 }
 
 func (p *TerraformCloudProvider) Resources(ctx context.Context) []func() resource.Resource {
@@ -138,6 +138,7 @@ func (p *TerraformCloudProvider) Resources(ctx context.Context) []func() resourc
 		NewNamespaceResource,
 		NewNamespaceSearchAttributeResource,
 		NewUserResource,
+		NewMetricsEndpointResource,
 	}
 }
 

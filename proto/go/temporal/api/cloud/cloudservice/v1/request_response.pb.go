@@ -7,10 +7,10 @@
 package cloudservicev1
 
 import (
-	v1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/identity/v1"
-	v12 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/namespace/v1"
-	v11 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/operation/v1"
-	v13 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/region/v1"
+	v1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/identity/v1"
+	v12 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/namespace/v1"
+	v11 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/operation/v1"
+	v13 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/region/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

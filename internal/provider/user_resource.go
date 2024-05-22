@@ -17,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
-	internaltypes "github.com/temporalio/terraform-provider-temporalcloud/internal/types"
-	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
-	identityv1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/identity/v1"
+	cloudservicev1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
+	identityv1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/identity/v1"
+
+	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
+	internaltypes "github.com/ennyjfrick/terraform-provider-temporalcloud/internal/types"
 )
 
 type (
@@ -64,7 +65,7 @@ func (r *userResource) Configure(_ context.Context, req resource.ConfigureReques
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -74,7 +75,7 @@ func (r *userResource) Configure(_ context.Context, req resource.ConfigureReques
 		return
 	}
 
-	r.client = client
+	r.client = clientStore.CloudServiceClient()
 }
 
 func (r *userResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

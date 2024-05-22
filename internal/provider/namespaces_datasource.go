@@ -11,8 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	cloudservicev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
-	namespacev1 "github.com/temporalio/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/namespace/v1"
+	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
+	cloudservicev1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
+	namespacev1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/namespace/v1"
 )
 
 var (
@@ -98,7 +99,7 @@ func (d *namespacesDataSource) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(cloudservicev1.CloudServiceClient)
+	clientStore, ok := req.ProviderData.(client.ClientStore)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -108,7 +109,7 @@ func (d *namespacesDataSource) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-	d.client = client
+	d.client = clientStore.CloudServiceClient()
 }
 
 func (d *namespacesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

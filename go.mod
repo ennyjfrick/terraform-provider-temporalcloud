@@ -1,4 +1,4 @@
-module github.com/temporalio/terraform-provider-temporalcloud
+module github.com/ennyjfrick/terraform-provider-temporalcloud
 
 go 1.21
 
@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.4.0
 	github.com/jpillora/maplock v0.0.0-20160420012925-5c725ac6e22a
+	github.com/temporalio/tcld v0.22.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/grpc v1.61.1
 	google.golang.org/protobuf v1.32.0
@@ -31,6 +32,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/fatih/color v1.16.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.4.0 // indirect

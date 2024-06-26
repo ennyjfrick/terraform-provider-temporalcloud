@@ -28,7 +28,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
+	"regexp"
 	"time"
 
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
@@ -45,22 +45,36 @@ import (
 	operationv1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/operation/v1"
 )
 
-const TemporalCloudAPIVersionHeader = "temporal-cloud-api-version"
+const (
+	TemporalCloudAPIVersionHeader = "temporal-cloud-api-version"
+	LegacyTemporalCloudAPIVersion = "2024-03-18-00"
+	TemporalCloudAPIVersion       = "2024-05-13-00"
+)
 
-var TemporalCloudAPIVersion = "2023-10-01-00"
+var (
+	TemporalCloudAPIMethodRegex = regexp.MustCompile(`^\/temporal\.api\.cloud\.cloudservice\.v1\.CloudService\/[^\/]*$`)
+)
 
-// ClientStore is a client for the Temporal Cloud API.
-type ClientStore struct {
+// Store is a client for the Temporal Cloud API.
+type Store struct {
 	c cloudservicev1.CloudServiceClient
 	a accountservice.AccountServiceClient
 	r requestservice.RequestServiceClient
 }
 
-func (c *ClientStore) CloudServiceClient() cloudservicev1.CloudServiceClient {
+func (c *Store) CloudServiceClient() cloudservicev1.CloudServiceClient {
 	return c.c
 }
 
-func NewConnectionWithAPIKey(addrStr string, allowInsecure bool, apiKey string, opts ...grpc.DialOption) (*ClientStore, error) {
+func (c *Store) AccountServiceClient() accountservice.AccountServiceClient {
+	return c.a
+}
+
+func (c *Store) RequestServiceClient() requestservice.RequestServiceClient {
+	return c.r
+}
+
+func NewConnectionWithAPIKey(addrStr string, allowInsecure bool, apiKey string, opts ...grpc.DialOption) (*Store, error) {
 	defaultOpts := []grpc.DialOption{
 		grpc.WithPerRPCCredentials(NewAPIKeyRPCCredential(apiKey, allowInsecure)),
 		grpc.WithChainUnaryInterceptor(
@@ -82,15 +96,7 @@ func NewConnectionWithAPIKey(addrStr string, allowInsecure bool, apiKey string, 
 	)
 }
 
-func (c *ClientStore) AccountServiceClient() accountservice.AccountServiceClient {
-	return c.a
-}
-
-func (c *ClientStore) RequestServiceClient() requestservice.RequestServiceClient {
-	return c.r
-}
-
-func newConnection(addrStr string, allowInsecure bool, opts ...grpc.DialOption) (*ClientStore, error) {
+func newConnection(addrStr string, allowInsecure bool, opts ...grpc.DialOption) (*Store, error) {
 	addr, err := url.Parse(addrStr)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse server address: %s", err)
@@ -107,7 +113,7 @@ func newConnection(addrStr string, allowInsecure bool, opts ...grpc.DialOption) 
 	cloudClient := cloudservicev1.NewCloudServiceClient(conn)
 	accountClient := accountservice.NewAccountServiceClient(conn)
 	reqClient := requestservice.NewRequestServiceClient(conn)
-	return &ClientStore{c: cloudClient, a: accountClient, r: reqClient}, nil
+	return &Store{c: cloudClient, a: accountClient, r: reqClient}, nil
 }
 
 func AwaitAsyncOperation(ctx context.Context, client cloudservicev1.CloudServiceClient, op *operationv1.AsyncOperation) error {
@@ -235,6 +241,10 @@ func setAPIVersionInterceptor(
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
-	ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, strings.TrimSpace(TemporalCloudAPIVersion))
+	if TemporalCloudAPIMethodRegex.MatchString(method) {
+		ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, TemporalCloudAPIVersion)
+	} else {
+		ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, LegacyTemporalCloudAPIVersion)
+	}
 	return invoker(ctx, method, req, reply, cc, opts...)
 }

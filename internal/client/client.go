@@ -31,6 +31,7 @@ import (
 	"regexp"
 	"time"
 
+	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/temporalio/tcld/protogen/api/accountservice/v1"
 	"github.com/temporalio/tcld/protogen/api/request/v1"
@@ -74,10 +75,24 @@ func (c *Store) RequestServiceClient() requestservice.RequestServiceClient {
 }
 
 func NewConnectionWithAPIKey(addrStr string, allowInsecure bool, apiKey string, opts ...grpc.DialOption) (*Store, error) {
+	defaultOpts := []grpc.DialOption{
+		grpc.WithPerRPCCredentials(NewAPIKeyRPCCredential(apiKey, allowInsecure)),
+		grpc.WithChainUnaryInterceptor(
+			grpcretry.UnaryClientInterceptor(
+				grpcretry.WithBackoff(
+					grpcretry.BackoffExponentialWithJitter(250*time.Millisecond, 0.1),
+				),
+				grpcretry.WithMax(5),
+			),
+		),
+	}
+
+	opts = append(defaultOpts, opts...)
+
 	return newConnection(
 		addrStr,
 		allowInsecure,
-		append(opts, grpc.WithPerRPCCredentials(NewAPIKeyRPCCredential(apiKey, allowInsecure)))...,
+		opts...,
 	)
 }
 

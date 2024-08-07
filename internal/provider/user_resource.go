@@ -17,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
-	internaltypes "github.com/ennyjfrick/terraform-provider-temporalcloud/internal/types"
 	cloudservicev1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/cloudservice/v1"
 	identityv1 "github.com/ennyjfrick/terraform-provider-temporalcloud/proto/go/temporal/api/cloud/identity/v1"
+
+	"github.com/ennyjfrick/terraform-provider-temporalcloud/internal/client"
+	internaltypes "github.com/ennyjfrick/terraform-provider-temporalcloud/internal/types"
 )
 
 type (

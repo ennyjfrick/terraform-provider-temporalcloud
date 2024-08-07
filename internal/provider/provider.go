@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -27,9 +28,10 @@ type TerraformCloudProvider struct {
 
 // TerraformCloudProviderModel describes the provider data model.
 type TerraformCloudProviderModel struct {
-	APIKey        types.String `tfsdk:"api_key"`
-	Endpoint      types.String `tfsdk:"endpoint"`
-	AllowInsecure types.Bool   `tfsdk:"allow_insecure"`
+	APIKey           types.String `tfsdk:"api_key"`
+	Endpoint         types.String `tfsdk:"endpoint"`
+	AllowInsecure    types.Bool   `tfsdk:"allow_insecure"`
+	AllowedAccountID types.String `tfsdk:"allowed_account_id"`
 }
 
 func (p *TerraformCloudProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -69,6 +71,10 @@ in version control. We recommend passing credentials to this provider via enviro
 				Description: "If set to True, it allows for an insecure connection to the Temporal Cloud API. This should never be set to 'true' in production and defaults to false.",
 				Optional:    true,
 			},
+			"allowed_account_id": schema.StringAttribute{
+				Description: "The ID of the account to operate on. Prevents accidental mutation of accounts other than that listed",
+				Optional:    true,
+			},
 		},
 	}
 }
@@ -94,15 +100,23 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 			path.Root("endpoint"),
 			"Unknown Terraform Cloud Endpoint",
 			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for the Temporal Cloud API Endpoint."+
-				" Either apply the source of the value first, or statically set the API Key via environment variable or in configuration.")
+				" Either apply the source of the value first, or statically set the Endpoint via environment variable or in configuration.")
 	}
 
 	if data.AllowInsecure.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("allow_insecure"),
-			"Unknown Terraform Cloud Endpoint",
+			"Unknown Terraform Cloud Allow Insecure Value",
 			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for `allow_insecure`."+
-				" Either apply the source of the value first, or statically set the API Key via environment variable or in configuration.")
+				" Either apply the source of the value first, or statically set the Allow Insecure value via environment variable or in configuration.")
+	}
+
+	if data.AllowedAccountID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("allowed_account_id"),
+			"Unknown Terraform Cloud Allowed Account ID Value",
+			"The provider cannot create a Terraform Cloud API client as there is an unknown configuration value for `allowed_account_id`."+
+				" Either apply the source of the value first, or statically set the Allowed Account ID value via environment variable or in configuration.")
 	}
 
 	apiKey := os.Getenv("TEMPORAL_CLOUD_API_KEY")
@@ -123,10 +137,26 @@ func (p *TerraformCloudProvider) Configure(ctx context.Context, req provider.Con
 		allowInsecure = data.AllowInsecure.ValueBool()
 	}
 
+	allowedAccountID := os.Getenv("TEMPORAL_CLOUD_ALLOWED_ACCOUNT_ID")
+	if !data.AllowedAccountID.IsNull() {
+		allowedAccountID = data.AllowedAccountID.ValueString()
+	}
+
 	clientStore, err := client.NewConnectionWithAPIKey(endpoint, allowInsecure, apiKey)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to connect to Temporal Cloud API", err.Error())
 		return
+	}
+
+	if allowedAccountID != "" {
+		currentAccountID, err := clientStore.GetCurrentAccountID(ctx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to validate allowed account ID", fmt.Sprintf("failed to get current ID: %s", err.Error()))
+			return
+		}
+		if currentAccountID != allowedAccountID {
+			resp.Diagnostics.AddError("Failed to validate allowed account ID", fmt.Sprintf("current account ID %s does not match allowed account ID %s", currentAccountID, allowedAccountID))
+		}
 	}
 
 	resp.DataSourceData = clientStore

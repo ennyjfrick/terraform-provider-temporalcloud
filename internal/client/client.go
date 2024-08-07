@@ -23,17 +23,22 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
+	"slices"
+	"strings"
 	"time"
 
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/temporalio/tcld/protogen/api/accountservice/v1"
+	"github.com/temporalio/tcld/protogen/api/auth/v1"
+	"github.com/temporalio/tcld/protogen/api/authservice/v1"
 	"github.com/temporalio/tcld/protogen/api/request/v1"
 	"github.com/temporalio/tcld/protogen/api/requestservice/v1"
 	"google.golang.org/grpc"
@@ -57,9 +62,10 @@ var (
 
 // Store is a client for the Temporal Cloud API.
 type Store struct {
-	c cloudservicev1.CloudServiceClient
-	a accountservice.AccountServiceClient
-	r requestservice.RequestServiceClient
+	c    cloudservicev1.CloudServiceClient
+	a    accountservice.AccountServiceClient
+	r    requestservice.RequestServiceClient
+	auth authservice.AuthServiceClient
 }
 
 func (c *Store) CloudServiceClient() cloudservicev1.CloudServiceClient {
@@ -72,6 +78,42 @@ func (c *Store) AccountServiceClient() accountservice.AccountServiceClient {
 
 func (c *Store) RequestServiceClient() requestservice.RequestServiceClient {
 	return c.r
+}
+
+func (c *Store) GetCurrentAccountID(ctx context.Context) (string, error) {
+	req := &authservice.GetRolesByPermissionsRequest{
+		Specs: []*auth.RoleSpec{
+			{
+				AccountRole: &auth.AccountRoleSpec{
+					ActionGroup: auth.ACCOUNT_ACTION_GROUP_ADMIN,
+				},
+			},
+		},
+	}
+	resp, err := c.auth.GetRolesByPermissions(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	roles := resp.GetRoles()
+	if len(roles) == 0 {
+		return "", fmt.Errorf("expected at least one role with admin action group, got zero")
+	}
+	sortFunc := func(a, b *auth.Role) int {
+		return cmp.Compare(a.Type, b.Type)
+	}
+	slices.SortStableFunc(roles, sortFunc)
+	index, ok := slices.BinarySearchFunc(roles, &auth.Role{Type: auth.ROLE_TYPE_PREDEFINED}, sortFunc)
+	if !ok {
+		return "", fmt.Errorf("expected at least one predefined role, got zero")
+	}
+	r := roles[index]
+
+	return AccountIDFromAdminRoleID(r.Id), nil
+}
+
+func AccountIDFromAdminRoleID(in string) string {
+	s := strings.Split(in, "-")
+	return s[len(s)-1]
 }
 
 func NewConnectionWithAPIKey(addrStr string, allowInsecure bool, apiKey string, opts ...grpc.DialOption) (*Store, error) {
@@ -113,7 +155,8 @@ func newConnection(addrStr string, allowInsecure bool, opts ...grpc.DialOption) 
 	cloudClient := cloudservicev1.NewCloudServiceClient(conn)
 	accountClient := accountservice.NewAccountServiceClient(conn)
 	reqClient := requestservice.NewRequestServiceClient(conn)
-	return &Store{c: cloudClient, a: accountClient, r: reqClient}, nil
+	authClient := authservice.NewAuthServiceClient(conn)
+	return &Store{c: cloudClient, a: accountClient, r: reqClient, auth: authClient}, nil
 }
 
 func AwaitAsyncOperation(ctx context.Context, client cloudservicev1.CloudServiceClient, op *operationv1.AsyncOperation) error {

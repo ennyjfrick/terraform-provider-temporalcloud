@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -52,12 +51,7 @@ import (
 
 const (
 	TemporalCloudAPIVersionHeader = "temporal-cloud-api-version"
-	LegacyTemporalCloudAPIVersion = "2024-03-18-00"
-	TemporalCloudAPIVersion       = "2024-05-13-00"
-)
-
-var (
-	TemporalCloudAPIMethodRegex = regexp.MustCompile(`^\/temporal\.api\.cloud\.cloudservice\.v1\.CloudService\/[^\/]*$`)
+	TemporalCloudAPIVersion       = "2023-10-01-00"
 )
 
 // Store is a client for the Temporal Cloud API.
@@ -284,10 +278,6 @@ func setAPIVersionInterceptor(
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
-	if TemporalCloudAPIMethodRegex.MatchString(method) {
-		ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, TemporalCloudAPIVersion)
-	} else {
-		ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, LegacyTemporalCloudAPIVersion)
-	}
+	ctx = metadata.AppendToOutgoingContext(ctx, TemporalCloudAPIVersionHeader, TemporalCloudAPIVersion)
 	return invoker(ctx, method, req, reply, cc, opts...)
 }

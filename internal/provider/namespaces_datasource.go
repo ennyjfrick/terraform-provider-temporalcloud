@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+
 	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 
 	cloudservicev1 "go.temporal.io/api/cloud/cloudservice/v1"
@@ -305,9 +306,9 @@ func (d *namespacesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		namespaceModel := namespaceDataModel{
 			ID:               types.StringValue(ns.Namespace),
 			Name:             types.StringValue(ns.GetSpec().GetName()),
-			State:            types.StringValue(ns.State),
+			State:            types.StringValue(ns.State.String()),
 			ActiveRegion:     types.StringValue(ns.ActiveRegion),
-			AcceptedClientCA: types.StringValue(ns.GetSpec().GetMtlsAuth().GetAcceptedClientCa()),
+			AcceptedClientCA: types.StringValue(ns.GetSpec().GetMtlsAuth().GetAcceptedClientCaDeprecated()), // TODO: use []byte
 			RetentionDays:    types.Int64Value(int64(ns.GetSpec().GetRetentionDays())),
 			CreatedTime:      types.StringValue(ns.GetCreatedTime().AsTime().Format(time.RFC3339)),
 		}

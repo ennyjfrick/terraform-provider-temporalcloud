@@ -76,7 +76,7 @@ resource "temporalcloud_apikey" "terraform2" {
 					if spec.GetDisplayName() != apiKeyName {
 						return fmt.Errorf("expected display name to be %s, got %s", apiKeyName, spec.GetDisplayName())
 					}
-					if spec.GetOwnerType() != "service-account" {
+					if spec.GetOwnerTypeDeprecated() != "service-account" { // TODO: switch to enum values
 						return fmt.Errorf("expected owner type to be service-account, got %s", spec.GetOwnerType())
 					}
 					serviceAccountID := s.RootModule().Resources["temporalcloud_service_account.terraform1"].Primary.Attributes["id"]

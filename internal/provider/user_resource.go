@@ -17,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
-	internaltypes "github.com/temporalio/terraform-provider-temporalcloud/internal/types"
 	cloudservicev1 "go.temporal.io/api/cloud/cloudservice/v1"
 	identityv1 "go.temporal.io/api/cloud/identity/v1"
+
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
+	internaltypes "github.com/temporalio/terraform-provider-temporalcloud/internal/types"
 )
 
 type (
@@ -170,7 +171,7 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 			Email: plan.Email.ValueString(),
 			Access: &identityv1.Access{
 				AccountAccess: &identityv1.AccountAccess{
-					Role: plan.AccountAccess.ValueString(),
+					RoleDeprecated: plan.AccountAccess.ValueString(), // TODO use enum value
 				},
 				NamespaceAccesses: namespaceAccesses,
 			},
@@ -243,7 +244,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			Email: plan.Email.ValueString(),
 			Access: &identityv1.Access{
 				AccountAccess: &identityv1.AccountAccess{
-					Role: plan.AccountAccess.ValueString(),
+					RoleDeprecated: plan.AccountAccess.ValueString(), // TODO use enum value
 				},
 				NamespaceAccesses: namespaceAccesses,
 			},
@@ -333,7 +334,7 @@ func getNamespaceAccessesFromModel(ctx context.Context, diags diag.Diagnostics, 
 			return nil
 		}
 		namespaceAccesses[model.NamespaceID.ValueString()] = &identityv1.NamespaceAccess{
-			Permission: model.Permission.ValueString(),
+			PermissionDeprecated: model.Permission.ValueString(), // TODO use enum value
 		}
 	}
 
@@ -342,9 +343,9 @@ func getNamespaceAccessesFromModel(ctx context.Context, diags diag.Diagnostics, 
 
 func updateUserModelFromSpec(ctx context.Context, diags diag.Diagnostics, state *userResourceModel, user *identityv1.User) {
 	state.ID = types.StringValue(user.GetId())
-	state.State = types.StringValue(user.GetState())
+	state.State = types.StringValue(user.GetState().String())
 	state.Email = types.StringValue(user.GetSpec().GetEmail())
-	state.AccountAccess = internaltypes.CaseInsensitiveString(user.GetSpec().GetAccess().GetAccountAccess().GetRole())
+	state.AccountAccess = internaltypes.CaseInsensitiveString(user.GetSpec().GetAccess().GetAccountAccess().GetRole().String())
 
 	namespaceAccesses := types.ListNull(types.ObjectType{AttrTypes: userNamespaceAccessAttrs})
 	if len(user.GetSpec().GetAccess().GetNamespaceAccesses()) > 0 {
@@ -352,7 +353,7 @@ func updateUserModelFromSpec(ctx context.Context, diags diag.Diagnostics, state 
 		for ns, namespaceAccess := range user.GetSpec().GetAccess().GetNamespaceAccesses() {
 			model := userNamespaceAccessModel{
 				NamespaceID: types.StringValue(ns),
-				Permission:  internaltypes.CaseInsensitiveString(namespaceAccess.GetPermission()),
+				Permission:  internaltypes.CaseInsensitiveString(namespaceAccess.GetPermission().String()),
 			}
 			obj, d := types.ObjectValueFrom(ctx, userNamespaceAccessAttrs, model)
 			diags.Append(d...)

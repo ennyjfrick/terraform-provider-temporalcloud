@@ -26,7 +26,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -85,9 +84,9 @@ func AwaitAsyncOperation(ctx context.Context, client client.CloudOperationsClien
 			tflog.Debug(ctx, "responded with state", map[string]any{
 				"state": newOp.GetState(),
 			})
-
+			// TODO: use enum values
 			// https://github.com/temporalio/api-cloud/blob/main/temporal/api/cloud/operation/v1/message.proto#L15
-			switch newOp.GetState() {
+			switch newOp.GetStateDeprecated() {
 			case "pending":
 			case "in_progress":
 				tflog.Debug(ctx, "retrying in 1 second", map[string]any{

@@ -17,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
-	internaltypes "github.com/temporalio/terraform-provider-temporalcloud/internal/types"
 	cloudservicev1 "go.temporal.io/api/cloud/cloudservice/v1"
 	identityv1 "go.temporal.io/api/cloud/identity/v1"
+
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
+	internaltypes "github.com/temporalio/terraform-provider-temporalcloud/internal/types"
 )
 
 type (
@@ -170,7 +171,7 @@ func (r *serviceAccountResource) Create(ctx context.Context, req resource.Create
 			Name: plan.Name.ValueString(),
 			Access: &identityv1.Access{
 				AccountAccess: &identityv1.AccountAccess{
-					Role: plan.AccountAccess.ValueString(),
+					RoleDeprecated: plan.AccountAccess.ValueString(), // TODO use enum value
 				},
 				NamespaceAccesses: namespaceAccesses,
 			},
@@ -243,7 +244,7 @@ func (r *serviceAccountResource) Update(ctx context.Context, req resource.Update
 			Name: plan.Name.ValueString(),
 			Access: &identityv1.Access{
 				AccountAccess: &identityv1.AccountAccess{
-					Role: plan.AccountAccess.ValueString(),
+					RoleDeprecated: plan.AccountAccess.ValueString(), // TODO use enum value
 				},
 				NamespaceAccesses: namespaceAccesses,
 			},
@@ -333,7 +334,7 @@ func getNamespaceAccessesFromServiceAccountModel(ctx context.Context, diags diag
 			return nil
 		}
 		namespaceAccesses[model.NamespaceID.ValueString()] = &identityv1.NamespaceAccess{
-			Permission: model.Permission.ValueString(),
+			PermissionDeprecated: model.Permission.ValueString(), // TODO use enum value
 		}
 	}
 
@@ -342,9 +343,9 @@ func getNamespaceAccessesFromServiceAccountModel(ctx context.Context, diags diag
 
 func updateServiceAccountModelFromSpec(ctx context.Context, diags diag.Diagnostics, state *serviceAccountResourceModel, serviceAccount *identityv1.ServiceAccount) {
 	state.ID = types.StringValue(serviceAccount.GetId())
-	state.State = types.StringValue(serviceAccount.GetState())
+	state.State = types.StringValue(serviceAccount.GetState().String())
 	state.Name = types.StringValue(serviceAccount.GetSpec().GetName())
-	state.AccountAccess = internaltypes.CaseInsensitiveString(serviceAccount.GetSpec().GetAccess().GetAccountAccess().GetRole())
+	state.AccountAccess = internaltypes.CaseInsensitiveString(serviceAccount.GetSpec().GetAccess().GetAccountAccess().GetRole().String())
 
 	namespaceAccesses := types.ListNull(types.ObjectType{AttrTypes: serviceAccountNamespaceAccessAttrs})
 	if len(serviceAccount.GetSpec().GetAccess().GetNamespaceAccesses()) > 0 {
@@ -352,7 +353,7 @@ func updateServiceAccountModelFromSpec(ctx context.Context, diags diag.Diagnosti
 		for ns, namespaceAccess := range serviceAccount.GetSpec().GetAccess().GetNamespaceAccesses() {
 			model := serviceAccountNamespaceAccessModel{
 				NamespaceID: types.StringValue(ns),
-				Permission:  internaltypes.CaseInsensitiveString(namespaceAccess.GetPermission()),
+				Permission:  internaltypes.CaseInsensitiveString(namespaceAccess.GetPermission().String()),
 			}
 			obj, d := types.ObjectValueFrom(ctx, serviceAccountNamespaceAccessAttrs, model)
 			diags.Append(d...)

@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -11,11 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 	cloudservicev1 "go.temporal.io/api/cloud/cloudservice/v1"
 	identityv1 "go.temporal.io/api/cloud/identity/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"time"
+
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 )
 
 type (
@@ -185,12 +187,12 @@ func (r *apiKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	svcResp, err := r.client.CloudService().CreateApiKey(ctx, &cloudservicev1.CreateApiKeyRequest{
 		Spec: &identityv1.ApiKeySpec{
-			OwnerId:     plan.OwnerID.ValueString(),
-			OwnerType:   plan.OwnerType.ValueString(),
-			DisplayName: plan.DisplayName.ValueString(),
-			Description: description,
-			ExpiryTime:  expiryTimestamp,
-			Disabled:    disabled,
+			OwnerId:             plan.OwnerID.ValueString(),
+			OwnerTypeDeprecated: plan.OwnerType.ValueString(), // TODO: switch to enum values
+			DisplayName:         plan.DisplayName.ValueString(),
+			Description:         description,
+			ExpiryTime:          expiryTimestamp,
+			Disabled:            disabled,
 		},
 	})
 
@@ -275,12 +277,12 @@ func (r *apiKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	svcResp, err := r.client.CloudService().UpdateApiKey(ctx, &cloudservicev1.UpdateApiKeyRequest{
 		KeyId: plan.ID.ValueString(),
 		Spec: &identityv1.ApiKeySpec{
-			OwnerId:     plan.OwnerID.ValueString(),
-			OwnerType:   plan.OwnerType.ValueString(),
-			DisplayName: plan.DisplayName.ValueString(),
-			Description: description,
-			ExpiryTime:  expiryTimestamp,
-			Disabled:    disabled,
+			OwnerId:             plan.OwnerID.ValueString(),
+			OwnerTypeDeprecated: plan.OwnerType.ValueString(), // TODO: switch to enum values
+			DisplayName:         plan.DisplayName.ValueString(),
+			Description:         description,
+			ExpiryTime:          expiryTimestamp,
+			Disabled:            disabled,
 		},
 		ResourceVersion: apiKey.GetApiKey().GetResourceVersion(),
 	})
@@ -350,9 +352,9 @@ func (r *apiKeyResource) ImportState(ctx context.Context, req resource.ImportSta
 
 func updateApiKeyModelFromSpec(state *apiKeyResourceModel, apikey *identityv1.ApiKey) {
 	state.ID = types.StringValue(apikey.GetId())
-	state.State = types.StringValue(apikey.GetState())
+	state.State = types.StringValue(apikey.GetStateDeprecated()) // TODO: switch to enum values
 	state.OwnerID = types.StringValue(apikey.GetSpec().GetOwnerId())
-	state.OwnerType = types.StringValue(apikey.GetSpec().GetOwnerType())
+	state.OwnerType = types.StringValue(apikey.GetSpec().GetOwnerTypeDeprecated()) // TODO: switch to enum values
 	state.DisplayName = types.StringValue(apikey.GetSpec().GetDisplayName())
 	if apikey.GetSpec().GetDescription() != "" {
 		state.Description = types.StringValue(apikey.GetSpec().GetDescription())

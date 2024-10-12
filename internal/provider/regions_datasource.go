@@ -7,8 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 	cloudservicev1 "go.temporal.io/api/cloud/cloudservice/v1"
+
+	"github.com/temporalio/terraform-provider-temporalcloud/internal/client"
 )
 
 var (
@@ -111,7 +112,7 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	for _, region := range regions.GetRegions() {
 		regionModel := regionDataModel{
 			ID:                  types.StringValue(region.GetId()),
-			CloudProvider:       types.StringValue(region.GetCloudProvider()),
+			CloudProvider:       types.StringValue(region.GetCloudProvider().String()),
 			CloudProviderRegion: types.StringValue(region.GetCloudProviderRegion()),
 			Location:            types.StringValue(region.GetLocation()),
 		}

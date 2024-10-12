@@ -145,14 +145,14 @@ resource "temporalcloud_service_account" "terraform" {
 						return fmt.Errorf("failed to get namespace: %v", err)
 					}
 					spec := serviceAccount.ServiceAccount.GetSpec()
-					if strings.ToLower(spec.GetAccess().GetAccountAccess().GetRole()) != "read" {
+					if strings.ToLower(spec.GetAccess().GetAccountAccess().GetRole().String()) != "read" {
 						return errors.New("expected account role to be read")
 					}
 					nsPerm, ok := spec.GetAccess().GetNamespaceAccesses()[ns.Namespace.GetNamespace()]
 					if !ok {
 						return fmt.Errorf("expected entry in NamespaceAccesses for namespace %s", ns.Namespace.GetNamespace())
 					}
-					if strings.ToLower(nsPerm.GetPermission()) != "write" {
+					if strings.ToLower(nsPerm.GetPermission().String()) != "write" {
 						return errors.New("expected namespace access permission to be write")
 					}
 					return nil

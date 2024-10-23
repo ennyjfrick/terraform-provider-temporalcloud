@@ -314,7 +314,7 @@ func (r *namespaceResource) Create(ctx context.Context, req resource.CreateReque
 		mtls := &namespacev1.MtlsAuthSpec{}
 		if plan.AcceptedClientCA.ValueString() != "" {
 			mtls.Enabled = true
-			mtls.AcceptedClientCa = plan.AcceptedClientCA.ValueString()
+			mtls.AcceptedClientCaDeprecated = plan.AcceptedClientCA.ValueString() // TODO use []byte
 			mtls.CertificateFilters = certFilters
 		}
 
@@ -419,7 +419,7 @@ func (r *namespaceResource) Update(ctx context.Context, req resource.UpdateReque
 		mtls := &namespacev1.MtlsAuthSpec{}
 		if plan.AcceptedClientCA.ValueString() != "" {
 			mtls.Enabled = true
-			mtls.AcceptedClientCa = plan.AcceptedClientCA.ValueString()
+			mtls.AcceptedClientCaDeprecated = plan.AcceptedClientCA.ValueString() // TODO use []byte
 			mtls.CertificateFilters = certFilters
 		}
 
@@ -545,8 +545,8 @@ func updateModelFromSpec(ctx context.Context, diags diag.Diagnostics, state *nam
 		certificateFilter = filters
 	}
 
-	if ns.GetSpec().GetMtlsAuth().GetAcceptedClientCa() != "" {
-		state.AcceptedClientCA = internaltypes.EncodedCA(ns.GetSpec().GetMtlsAuth().GetAcceptedClientCa())
+	if ns.GetSpec().GetMtlsAuth().GetAcceptedClientCaDeprecated() != "" { // TODO use []byte
+		state.AcceptedClientCA = internaltypes.EncodedCA(ns.GetSpec().GetMtlsAuth().GetAcceptedClientCaDeprecated())
 	}
 
 	if ns.GetSpec().GetApiKeyAuth() != nil {
